@@ -16,6 +16,10 @@
 
 package org.springframework.samples.petclinic.owner;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -25,23 +29,24 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.samples.petclinic.visit.Visit;
 import org.springframework.samples.petclinic.visit.VisitRepository;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Test class for {@link OwnerController}
@@ -64,6 +69,9 @@ class OwnerControllerTests {
 
 	private Owner george;
 
+	@Autowired
+	private ApplicationContext ac;
+
 	@BeforeEach
 	void setup() {
 		george = new Owner();
@@ -84,13 +92,44 @@ class OwnerControllerTests {
 		given(this.owners.findById(TEST_OWNER_ID)).willReturn(george);
 		Visit visit = new Visit();
 		visit.setDate(LocalDate.now());
-		given(this.visits.findByPetId(max.getId())).willReturn(Collections.singletonList(visit));
+		// given(this.visits.findByPetId(max.getId())).willReturn(Collections.singletonList(visit));
 	}
 
 	@Test
 	void testInitCreationForm() throws Exception {
-		mockMvc.perform(get("/owners/new")).andExpect(status().isOk()).andExpect(model().attributeExists("owner"))
-				.andExpect(view().name("owners/createOrUpdateOwnerForm"));
+		FileInputStream fis = new FileInputStream(
+				"C:\\Users\\KIMHB\\IdeaProjects\\spring-petclinic\\src\\main\\resources\\templates\\owners\\createOrUpdateOwnerForm.html");
+		assertAll(() -> assertNotNull(fis), () -> {
+			String str = "";
+			while (true) {
+				int i = 0;
+				i = fis.read();
+				if (i != -1) {
+					str += (char) i;
+				}
+				else {
+					break;
+				}
+			}
+
+			mockMvc.perform(get("/owners/new")).andExpect(status().isOk()).andExpect(model().attributeExists("owner"))
+					.andExpect(view().name("owners/createOrUpdateOwnerForm")).andExpect(content().string(str));
+		});
+
+		/*
+		 * mockMvc.perform(get("/owners/new")).andExpect(status().isOk()).andExpect(model(
+		 * ).attributeExists("owner"))
+		 * .andExpect(view().name("owners/createOrUpdateOwnerForm"))
+		 * //.andExpect(content().string("owners/createOrUpdateOwnerForm"))
+		 * .andExpect(model().attribute("mo",is("abc")));
+		 */
+	}
+
+	@Test
+	void myTestFunction() throws Exception {
+
+		mockMvc.perform(get("/owners/myTestFunc")).andExpect(status().isOk()).andExpect(content().string("string 데이터"));
+
 	}
 
 	@Test
@@ -147,6 +186,7 @@ class OwnerControllerTests {
 				.andExpect(model().attribute("owner", hasProperty("city", is("Madison"))))
 				.andExpect(model().attribute("owner", hasProperty("telephone", is("6085551023"))))
 				.andExpect(view().name("owners/createOrUpdateOwnerForm"));
+
 	}
 
 	@Test
@@ -165,6 +205,7 @@ class OwnerControllerTests {
 				.andExpect(model().attributeHasFieldErrors("owner", "address"))
 				.andExpect(model().attributeHasFieldErrors("owner", "telephone"))
 				.andExpect(view().name("owners/createOrUpdateOwnerForm"));
+
 	}
 
 	@Test
